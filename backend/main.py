@@ -52,7 +52,7 @@ Do NOT wrap the response in markdown codeblocks like ```json...```, just output 
 
     try:
         response = client.models.generate_content(
-            model='gemini-2.5-pro',
+            model='gemini-2.5-flash',
             contents=request.diff,
             config=types.GenerateContentConfig(
                 system_instruction=system_instruction,

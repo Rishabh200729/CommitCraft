@@ -1,191 +1,125 @@
-"use client";
-
-import { useState } from "react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import React from 'react';
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { CommandPaletteMockup } from "@/components/ui/CommandPaletteMockup";
+import { Activity, ShieldAlert, GitMerge, FileCode2 } from "lucide-react";
 
 export default function Home() {
-  const [diff, setDiff] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [commitMessage, setCommitMessage] = useState("");
-  const [prDescription, setPrDescription] = useState("");
-  const [prTab, setPrTab] = useState<'preview' | 'raw'>('preview');
-  const [copiedCommit, setCopiedCommit] = useState(false);
-  const [copiedPr, setCopiedPr] = useState(false);
-
-  const handleGenerate = async () => {
-    if (!diff.trim()) {
-      setError("Please enter a git diff.");
-      return;
-    }
-    
-    setLoading(true);
-    setError("");
-    setCommitMessage("");
-    setPrDescription("");
-
-    try {
-      const response = await fetch("http://localhost:8000/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ diff }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.detail || "Failed to generate text");
-      }
-
-      setCommitMessage(data.commitMessage || "");
-      setPrDescription(data.prDescription || "");
-    } catch (err: any) {
-      setError(err.message || "Something went wrong.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const copyToClipboard = (text: string, type: 'commit' | 'pr') => {
-    navigator.clipboard.writeText(text);
-    if (type === 'commit') {
-      setCopiedCommit(true);
-      setTimeout(() => setCopiedCommit(false), 2000);
-    } else {
-      setCopiedPr(true);
-      setTimeout(() => setCopiedPr(false), 2000);
-    }
-  };
-
   return (
-    <main className="min-h-screen flex flex-col p-6 md:p-12 lg:px-24">
-      {/* Vercel-style Header */}
-      <header className="flex flex-col gap-4 mb-12 mt-8">
-        <h1 className="text-5xl md:text-6xl font-semibold tracking-[-2.4px] text-white">
-          GitScribe.
-        </h1>
-        <p className="text-[18px] text-[#a1a1a1] max-w-2xl leading-relaxed">
-          Paste your git diff below. AI will instantly generate a Conventional Commit message and a professional GitHub PR description.
-        </p>
-      </header>
+    <main className="flex flex-col w-full pb-section overflow-hidden">
+      
+      {/* Hero Section */}
+      <section className="relative w-full min-h-[800px] flex flex-col items-center pt-section">
+        {/* Red Stripe Gradient Band */}
+        <div className="absolute top-0 left-0 right-0 h-[600px] bg-canvas overflow-hidden pointer-events-none">
+          <div className="absolute top-[-20%] left-[-10%] right-[-10%] h-[150%] bg-gradient-to-br from-hero-stripe-start to-hero-stripe-end opacity-15 transform -skew-y-[8deg]" />
+          <div className="absolute top-[10%] left-[-10%] right-[-10%] h-[150%] bg-gradient-to-br from-hero-stripe-start to-hero-stripe-end opacity-10 transform -skew-y-[8deg]" />
+          <div className="absolute top-[40%] left-[-10%] right-[-10%] h-[150%] bg-gradient-to-br from-hero-stripe-start to-hero-stripe-end opacity-5 transform -skew-y-[8deg]" />
+        </div>
 
-      {/* Main Grid */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 xl:gap-12 flex-1 pb-12 items-start">
-        
-        {/* Left Column: Input */}
-        <section className="flex flex-col gap-4">
-          <label className="text-[12px] font-mono text-[#a1a1a1] uppercase tracking-wider">
-            Git Diff Input
-          </label>
-          <div className="bg-[#111111] border border-[#333333] rounded-lg p-1 shadow-[0_1px_1px_#00000005] h-[400px]">
-            <textarea
-              className="w-full h-full bg-transparent text-[#ededed] p-4 font-mono text-[13px] leading-relaxed resize-none focus:outline-none"
-              placeholder="diff --git a/file b/file..."
-              value={diff}
-              onChange={(e) => setDiff(e.target.value)}
-            />
+        {/* Hero Content */}
+        <div className="relative z-10 flex flex-col items-center text-center px-6 max-w-[800px] mb-xl">
+          <h1 className="text-display-xl text-ink mb-md leading-tight" style={{ fontFeatureSettings: '"calt", "kern", "ss02", "ss08"' }}>
+            Review architecture, <br/>not just syntax.
+          </h1>
+          <p className="text-body-lg text-mute mb-lg max-w-[600px]">
+            GitScribe acts as the intelligence layer between AI code generation and human code review. Understand blast radius and merge risks in seconds.
+          </p>
+          <div className="flex items-center gap-4">
+            <Button variant="primary">Install GitScribe</Button>
+            <Button variant="secondary">View Documentation</Button>
           </div>
+        </div>
+
+        {/* Command Palette Mockup */}
+        <div className="relative z-10 w-full px-6 flex justify-center mt-xl">
+          <CommandPaletteMockup />
+        </div>
+      </section>
+
+      {/* Feature Section */}
+      <section className="max-w-[1240px] mx-auto px-6 w-full mt-[120px] flex flex-col gap-xl" id="features">
+        <div className="flex flex-col gap-xs mb-lg">
+          <h2 className="text-display-lg text-ink">Intelligence Layer</h2>
+          <p className="text-body-lg text-mute max-w-[600px]">Everything you need to understand large pull requests without reading thousands of lines.</p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-lg">
           
-          <button 
-            onClick={handleGenerate} 
-            disabled={loading}
-            className="self-start mt-4 bg-white text-black font-medium text-[16px] px-8 py-3 rounded-full hover:bg-opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_2px_4px_#0000001a]"
-          >
-            {loading ? "Generating..." : "Generate Description"}
-          </button>
-          
-          {error && (
-            <div className="mt-4 bg-[#ff1a1a]/10 border border-[#ff1a1a]/20 text-[#ff1a1a] text-sm p-4 rounded-md">
-              {error}
+          <Card variant="featureElevated" className="flex flex-col">
+            <div className="w-12 h-12 rounded-md bg-surface-card flex items-center justify-center mb-6">
+              <Activity className="w-6 h-6 text-accent-blue" />
             </div>
-          )}
-        </section>
+            <h3 className="text-heading-xl text-ink mb-sm">Blast Radius</h3>
+            <p className="text-body-md text-mute mb-lg flex-grow">
+              Deterministic dependency graphs powered by Neo4j show exactly what upstream and downstream services are affected by a change.
+            </p>
+            <Button variant="tertiary" className="w-fit">View Graph →</Button>
+          </Card>
 
-        {/* Right Column: Output */}
-        <section className="flex flex-col gap-8 h-full">
-          {/* Commit Message Card */}
-          <div className="flex flex-col gap-3">
-             <div className="flex justify-between items-center">
-               <label className="text-[12px] font-mono text-[#a1a1a1] uppercase tracking-wider">
-                 Commit Message
-               </label>
-               {commitMessage && (
-                 <button 
-                   onClick={() => copyToClipboard(commitMessage, 'commit')}
-                   className="text-[12px] text-[#a1a1a1] hover:text-white transition-colors flex items-center gap-1"
-                 >
-                   {copiedCommit ? "Copied!" : "Copy"}
-                 </button>
-               )}
-             </div>
-             
-             <div className="bg-[#111111] border border-[#333333] rounded-lg p-6 min-h-[120px] shadow-[0_1px_2px_#0000000a]">
-               {loading ? (
-                 <div className="h-full flex items-center justify-center text-[#888888] animate-pulse text-[14px]">Analyzing diff...</div>
-               ) : commitMessage ? (
-                 <pre className="text-[14px] text-white whitespace-pre-wrap font-sans">{commitMessage}</pre>
-               ) : (
-                 <div className="text-[#888888] text-[14px]">No output yet.</div>
-               )}
-             </div>
-          </div>
+          <Card variant="feature" className="flex flex-col">
+            <div className="w-12 h-12 rounded-md bg-surface-card flex items-center justify-center mb-6">
+              <ShieldAlert className="w-6 h-6 text-accent-yellow" />
+            </div>
+            <h3 className="text-heading-xl text-ink mb-sm">Critic Agent</h3>
+            <p className="text-body-md text-mute mb-lg flex-grow">
+              Adversarial AI validation reviews every line for security concerns, logic flaws, and architectural regressions before merge.
+            </p>
+            <Button variant="tertiary" className="w-fit">See Critic in action →</Button>
+          </Card>
 
-          {/* PR Description Card */}
-          <div className="flex flex-col gap-3 flex-1">
-             <div className="flex justify-between items-center">
-               <div className="flex items-center gap-4">
-                 <label className="text-[12px] font-mono text-[#a1a1a1] uppercase tracking-wider">
-                   Pull Request Description
-                 </label>
-                 {prDescription && (
-                   <div className="flex bg-[#222222] rounded-md p-1">
-                     <button
-                       onClick={() => setPrTab('preview')}
-                       className={`text-[11px] px-3 py-1 rounded-sm transition-colors ${prTab === 'preview' ? 'bg-[#333333] text-white' : 'text-[#888888] hover:text-[#cccccc]'}`}
-                     >
-                       Preview
-                     </button>
-                     <button
-                       onClick={() => setPrTab('raw')}
-                       className={`text-[11px] px-3 py-1 rounded-sm transition-colors ${prTab === 'raw' ? 'bg-[#333333] text-white' : 'text-[#888888] hover:text-[#cccccc]'}`}
-                     >
-                       Raw
-                     </button>
-                   </div>
-                 )}
-               </div>
-               {prDescription && (
-                 <button 
-                   onClick={() => copyToClipboard(prDescription, 'pr')}
-                   className="text-[12px] text-[#a1a1a1] hover:text-white transition-colors flex items-center gap-1"
-                 >
-                   {copiedPr ? "Copied!" : "Copy"}
-                 </button>
-               )}
-             </div>
-             
-             <div className="bg-[#111111] border border-[#333333] rounded-lg p-6 min-h-[300px] h-full flex-1 shadow-[0_1px_2px_#0000000a] overflow-auto">
-               {loading ? (
-                 <div className="h-full flex items-center justify-center text-[#888888] animate-pulse text-[14px]">Generating description...</div>
-               ) : prDescription ? (
-                 prTab === 'raw' ? (
-                   <div className="text-[14px] text-[#e0e0e0] whitespace-pre-wrap font-mono leading-relaxed">{prDescription}</div>
-                 ) : (
-                   <div className="text-[14px] text-[#e0e0e0] whitespace-pre-wrap font-sans leading-relaxed markdown-preview">
-                     <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                       {prDescription}
-                     </ReactMarkdown>
-                   </div>
-                 )
-               ) : (
-                 <div className="text-[#888888] text-[14px]">No output yet.</div>
-               )}
-             </div>
-          </div>
-        </section>
+          <Card variant="featureElevated" className="flex flex-col">
+            <div className="w-12 h-12 rounded-md bg-surface-card flex items-center justify-center mb-6">
+              <GitMerge className="w-6 h-6 text-accent-green" />
+            </div>
+            <h3 className="text-heading-xl text-ink mb-sm">PR Verdicts</h3>
+            <p className="text-body-md text-mute mb-lg flex-grow">
+              Senior Engineer agents combine blast radius data with logic analysis to produce a final, graph-verified risk assessment.
+            </p>
+            <Button variant="tertiary" className="w-fit">Read Sample Verdict →</Button>
+          </Card>
 
-      </div>
+        </div>
+      </section>
+
+      {/* Integration Store Section */}
+      <section className="max-w-[1240px] mx-auto px-6 w-full mt-section flex flex-col gap-xl">
+        <div className="flex flex-col gap-xs mb-lg">
+          <h2 className="text-display-lg text-ink">Works where you do</h2>
+          <p className="text-body-lg text-mute max-w-[600px]">Install GitScribe directly into your version control system.</p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-lg">
+          
+          {/* GitHub Mock */}
+          <Card variant="store" className="flex items-center gap-6">
+            <div className="w-16 h-16 bg-surface-card rounded-md flex items-center justify-center shrink-0 border border-hairline-soft">
+              <FileCode2 className="w-8 h-8 text-ink" />
+            </div>
+            <div className="flex flex-col gap-1 flex-grow">
+              <span className="text-heading-md text-ink">GitHub Integration</span>
+              <span className="text-caption-md text-mute">by GitScribe • 10k+ installs</span>
+              <span className="text-body-sm text-body truncate">Automatic PR review hooks.</span>
+            </div>
+            <Button variant="install">Install</Button>
+          </Card>
+
+          {/* IDE Mock */}
+          <Card variant="store" className="flex items-center gap-6">
+            <div className="w-16 h-16 bg-surface-card rounded-md flex items-center justify-center shrink-0 border border-hairline-soft">
+              <div className="w-8 h-8 rounded bg-accent-blue" />
+            </div>
+            <div className="flex flex-col gap-1 flex-grow">
+              <span className="text-heading-md text-ink">VS Code Extension</span>
+              <span className="text-caption-md text-mute">by GitScribe • 5k+ installs</span>
+              <span className="text-body-sm text-body truncate">View architecture graphs locally.</span>
+            </div>
+            <Button variant="install">Install</Button>
+          </Card>
+
+        </div>
+      </section>
+
     </main>
   );
 }

@@ -37,3 +37,7 @@ dist/
 .idea/
 *.swp
 *.swo
+
+# GitScribe Context
+.agents/
+context/

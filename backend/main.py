@@ -75,3 +75,13 @@ Do NOT wrap the response in markdown codeblocks like ```json...```, just output 
         raise HTTPException(status_code=500, detail=f"Failed to parse JSON from AI: {e}\nResponse: {result_text}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/health")
+def health_check():
+    neo4j_uri = os.getenv("NEO4J_URI")
+    neo4j_status = "configured" if neo4j_uri else "missing"
+    return {
+        "status": "ok",
+        "service": "GitScribe API",
+        "neo4j_config": neo4j_status
+    }

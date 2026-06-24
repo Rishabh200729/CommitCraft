@@ -7,7 +7,7 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 }
 
 export function Input({ variant = "default", className = "", ...props }: InputProps) {
-  let baseClasses = "bg-surface-elevated text-on-dark text-body-md outline-none transition-colors placeholder:text-mute border";
+  let baseClasses = "bg-surface-elevated text-ink text-body-md outline-none transition-colors placeholder:text-mute border";
   let variantClasses = "";
 
   switch (variant) {

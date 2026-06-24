@@ -26,7 +26,9 @@ export default function Home() {
             GitScribe acts as the intelligence layer between AI code generation and human code review. Understand blast radius and merge risks in seconds.
           </p>
           <div className="flex items-center gap-4">
-            <Button variant="primary">Install GitScribe</Button>
+            <a href="/dashboard">
+              <Button variant="primary">Launch Dashboard</Button>
+            </a>
             <Button variant="secondary">View Documentation</Button>
           </div>
         </div>

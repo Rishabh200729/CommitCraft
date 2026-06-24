@@ -12,19 +12,19 @@ export function Card({ variant = "feature", className = "", children, ...props }
 
   switch (variant) {
     case "feature":
-      variantClasses = "bg-surface rounded-lg p-xl text-on-dark text-body-md";
+      variantClasses = "bg-surface rounded-lg p-xl text-ink text-body-md";
       break;
     case "featureElevated":
-      variantClasses = "bg-surface-elevated rounded-lg p-xl text-on-dark text-body-md";
+      variantClasses = "bg-surface-elevated rounded-lg p-xl text-ink text-body-md";
       break;
     case "store":
-      variantClasses = "bg-surface rounded-md p-lg text-on-dark text-body-md";
+      variantClasses = "bg-surface rounded-md p-lg text-ink text-body-md";
       break;
     case "pricing":
-      variantClasses = "bg-surface rounded-lg p-xl text-on-dark text-body-md";
+      variantClasses = "bg-surface rounded-lg p-xl text-ink text-body-md";
       break;
     case "commandPalette":
-      variantClasses = "bg-surface rounded-lg p-0 text-on-dark text-body-md";
+      variantClasses = "bg-surface rounded-lg p-0 text-ink text-body-md";
       break;
   }
 

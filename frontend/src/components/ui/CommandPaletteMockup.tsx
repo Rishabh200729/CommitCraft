@@ -4,7 +4,7 @@ import { Badge } from './Badge';
 
 export function CommandPaletteMockup() {
   return (
-    <Card variant="commandPalette" className="w-full max-w-[700px] overflow-hidden shadow-2xl shadow-black/50 border-hairline-strong">
+    <Card variant="commandPalette" className="w-full max-w-[700px] overflow-hidden border-hairline-strong">
       {/* Header bar */}
       <div className="h-12 border-b border-hairline flex items-center px-4 gap-4 bg-surface-card">
         {/* macOS traffic lights */}
@@ -31,7 +31,7 @@ export function CommandPaletteMockup() {
             <div className="w-8 h-8 rounded-md bg-accent-blue-soft flex items-center justify-center">
               <span className="text-accent-blue text-body-lg">⚡</span>
             </div>
-            <span className="text-on-dark text-body-md font-medium">Analyze Blast Radius</span>
+            <span className="text-ink text-body-md font-medium">Analyze Blast Radius</span>
           </div>
           <Badge variant="keycap">⏎</Badge>
         </div>
@@ -41,7 +41,7 @@ export function CommandPaletteMockup() {
             <div className="w-8 h-8 rounded-md bg-accent-yellow-soft flex items-center justify-center">
               <span className="text-accent-yellow text-body-lg">🧠</span>
             </div>
-            <span className="text-on-dark text-body-md">Request AI Verdict</span>
+            <span className="text-ink text-body-md">Request AI Verdict</span>
           </div>
           <Badge variant="keycap">⌘ V</Badge>
         </div>
@@ -51,7 +51,7 @@ export function CommandPaletteMockup() {
             <div className="w-8 h-8 rounded-md bg-surface-elevated flex items-center justify-center">
               <span className="text-mute text-body-lg">📊</span>
             </div>
-            <span className="text-on-dark text-body-md">View Dependency Graph</span>
+            <span className="text-ink text-body-md">View Dependency Graph</span>
           </div>
           <Badge variant="keycap">⌘ G</Badge>
         </div>

@@ -18,13 +18,13 @@ export function Button({ variant = "primary", className = "", children, ...props
         variantClasses = "bg-primary hover:bg-primary-pressed text-on-primary rounded-md px-4 py-2 h-[36px]";
         break;
       case "secondary":
-        variantClasses = "bg-transparent text-on-dark rounded-md px-4 py-2 h-[36px]";
+        variantClasses = "bg-transparent text-ink rounded-md px-4 py-2 h-[36px]";
         break;
       case "tertiary":
-        variantClasses = "bg-surface-elevated text-on-dark rounded-md px-4 py-2 h-[36px]";
+        variantClasses = "bg-surface-elevated text-ink rounded-md px-4 py-2 h-[36px]";
         break;
       case "install":
-        variantClasses = "bg-transparent border border-hairline-strong text-on-dark rounded-md px-[14px] py-[6px]";
+        variantClasses = "bg-transparent border border-hairline-strong text-ink rounded-md px-[14px] py-[6px]";
         break;
     }
   }

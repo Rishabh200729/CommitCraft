@@ -6,6 +6,10 @@ from pydantic import BaseModel
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
+from fastapi import BackgroundTasks
+from pydantic import BaseModel, Field
+from typing import Literal, Dict, Any, Optional
+import uuid
 
 # Load from ../.env as it's in the project root
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "..", ".env"))
@@ -25,6 +29,23 @@ if GEMINI_API_KEY:
     client = genai.Client(api_key=GEMINI_API_KEY)
 else:
     client = None
+
+from services.webhook_service import jobs, process_pr_webhook
+
+class PullRequestWebhook(BaseModel):
+    repository_id: str
+    pr_number: int
+    target_file: str
+    diff: str
+
+class WebhookAcceptedResponse(BaseModel):
+    job_id: str
+    status: str
+
+class PRStatusResponse(BaseModel):
+    status: Literal["processing", "completed", "failed"]
+    analysis: Optional[Dict[str, Any]] = None
+    error: Optional[str] = None
 
 class GenerateRequest(BaseModel):
     diff: str
@@ -85,3 +106,28 @@ def health_check():
         "service": "GitScribe API",
         "neo4j_config": neo4j_status
     }
+
+@app.post("/api/webhooks/pr", response_model=WebhookAcceptedResponse, status_code=202)
+async def handle_pr_webhook(payload: PullRequestWebhook, background_tasks: BackgroundTasks):
+    job_id = str(uuid.uuid4())
+    
+    # Initialize job state
+    jobs[job_id] = {"status": "processing"}
+    
+    # Launch background processing
+    background_tasks.add_task(process_pr_webhook, job_id, payload.target_file, payload.diff)
+    
+    return WebhookAcceptedResponse(job_id=job_id, status="processing")
+
+@app.get("/api/pr/{job_id}", response_model=PRStatusResponse)
+async def get_pr_status(job_id: str):
+    if job_id not in jobs:
+        raise HTTPException(status_code=404, detail="Job ID not found")
+        
+    job_data = jobs[job_id]
+    
+    return PRStatusResponse(
+        status=job_data["status"],
+        analysis=job_data.get("analysis"),
+        error=job_data.get("error")
+    )

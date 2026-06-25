@@ -16,23 +16,17 @@ class TypeScriptParser:
             (export_statement source: (string (string_fragment) @import_path))
         """)
 
-    def extract_imports(self, file_path: str) -> List[str]:
+    def extract_imports_from_content(self, code: str) -> List[str]:
         """
-        Parses a TS/TSX file and returns a list of all raw import strings.
+        Parses a TS/TSX code string and returns a list of all raw import strings.
         """
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
-                code = f.read()
-            
             tree = self.parser.parse(bytes(code, 'utf-8'))
             
             matches = self.import_query.matches(tree.root_node)
             imports: Set[str] = set()
             
             for match in matches:
-                # Match is a tuple of (pattern_index, dict_of_captures)
-                # In tree-sitter 0.22+, it's a list of (Node, capture_name)
-                # Let's handle both possible structures just in case
                 if isinstance(match, tuple) and len(match) == 2 and isinstance(match[1], dict):
                     # Older style
                     for capture_name, nodes in match[1].items():
@@ -41,8 +35,6 @@ class TypeScriptParser:
                         for node in nodes:
                             imports.add(code[node.start_byte:node.end_byte])
                 else:
-                    # Newer style list of tuples: (Node, "import_path")
-                    # Or dictionary in newer versions
                     captures = match[1] if isinstance(match, tuple) else match
                     if isinstance(captures, dict):
                         for nodes in captures.values():
@@ -56,7 +48,19 @@ class TypeScriptParser:
             
             return list(imports)
         except Exception as e:
-            print(f"Error parsing {file_path}: {e}")
+            print(f"Error parsing content: {e}")
+            return []
+
+    def extract_imports(self, file_path: str) -> List[str]:
+        """
+        Parses a TS/TSX file and returns a list of all raw import strings.
+        """
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                code = f.read()
+            return self.extract_imports_from_content(code)
+        except Exception as e:
+            print(f"Error reading {file_path}: {e}")
             return []
 
     def resolve_import_path(self, current_file: str, raw_import: str, project_root: str) -> str | None:

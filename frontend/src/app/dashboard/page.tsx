@@ -12,6 +12,8 @@ import { diff } from '@/lib/test';
 import { usePRPolling } from '@/hooks/usePRPolling';
 const nodeTypes = {
   modified: FileNode,
+  added: FileNode,
+  removed: FileNode,
   impacted: FileNode,
   dependency: FileNode,
 };

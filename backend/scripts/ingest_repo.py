@@ -5,8 +5,8 @@ from pathlib import Path
 # Add backend to sys.path so we can import modules
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from parser.ts_parser import TypeScriptParser
-from graph_db.neo4j_client import Neo4jClient
+from app.parser.ts_parser import TypeScriptParser
+from app.graph_db.neo4j_client import Neo4jClient
 
 def ingest_directory(directory: str, project_root: str):
     print(f"Starting ingestion for {directory}...")

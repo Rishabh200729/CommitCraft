@@ -6,6 +6,8 @@ export function FileNode({ data, type }: NodeProps) {
   // Map backend graph types to visual states
   const styles = {
     modified: 'border-accent-blue bg-surface-card',
+    added: 'border-accent-green bg-surface-card',
+    removed: 'border-accent-red bg-surface-card opacity-50 border-dashed',
     impacted: 'border-accent-yellow bg-surface-card',
     dependency: 'border-hairline bg-surface',
   };

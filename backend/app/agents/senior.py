@@ -1,5 +1,6 @@
 import json
-from langchain_google_genai import ChatGoogleGenerativeAI
+import os
+from langchain_openai import ChatOpenAI
 from langchain_core.prompts import PromptTemplate
 from .state import PRReviewState, ArchitecturalVerdict
 
@@ -8,7 +9,13 @@ def senior_node(state: PRReviewState) -> dict:
     Combines the localized flaws from the Critic with the deterministic graph from the Navigator.
     Produces an initial architectural impact summary and risk assessment.
     """
-    llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0)
+    llm = ChatOpenAI(
+        base_url="https://openrouter.ai/api/v1",
+        api_key=os.environ.get("OPENROUTER_API_KEY"),
+        model="google/gemma-4-31b-it:free",
+        temperature=0,
+        extra_body={"reasoning": {"enabled": True}}
+    )
     structured_llm = llm.with_structured_output(ArchitecturalVerdict)
     
     prompt = PromptTemplate.from_template("""

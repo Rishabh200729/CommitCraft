@@ -4,8 +4,8 @@ import sys
 # Add backend to sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from graph_db.neo4j_client import Neo4jClient
-from graph_db.blast_radius import BlastRadiusEngine
+from app.graph_db.neo4j_client import Neo4jClient
+from app.graph_db.blast_radius import BlastRadiusEngine
 
 def main():
     client = Neo4jClient()

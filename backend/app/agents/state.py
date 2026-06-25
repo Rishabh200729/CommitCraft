@@ -19,7 +19,8 @@ class FinalVerdict(BaseModel):
     recommendations: List[str] = Field(description="Actionable recommendations for the developer.")
 
 class PRReviewState(TypedDict, total=False):
-    target_file: str
+    target_file: str # Legacy, to be removed or kept for single-file tests
+    changed_files: List[dict] # Added for Feature 01: Architecture Diff Engine
     pr_diff: str
     blast_radius: dict
     critic_flaws: dict

@@ -17,6 +17,8 @@ class FinalVerdict(BaseModel):
     architectural_summary: str = Field(description="Verified architectural summary, stripped of any hallucinations.")
     critical_findings: List[str] = Field(description="Verified critical issues from the Critic.")
     recommendations: List[str] = Field(description="Actionable recommendations for the developer.")
+    impacted_flows: List[str] = Field(default_factory=list, description="List of UserFlows impacted by this PR.")
+    owners: List[str] = Field(default_factory=list, description="List of Teams that own the impacted or modified files.")
 
 class PRReviewState(TypedDict, total=False):
     target_file: str # Legacy, to be removed or kept for single-file tests

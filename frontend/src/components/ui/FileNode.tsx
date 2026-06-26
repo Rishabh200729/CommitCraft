@@ -25,9 +25,21 @@ export function FileNode({ data, type }: NodeProps) {
         <span className="text-body-md font-medium text-ink truncate block" title={data.label as string}>
           {data.label as string}
         </span>
-        <span className="text-caption-sm text-mute uppercase tracking-wider">
-          {type === 'modified' ? 'Target' : type}
-        </span>
+        <div className="flex items-center gap-2 mt-1">
+          <span className="text-caption-sm text-mute uppercase tracking-wider">
+            {type === 'modified' ? 'Target' : type}
+          </span>
+          {(data.owners as string[])?.length > 0 && (
+            <span className="bg-accent-blue-soft text-accent-blue text-[10px] px-1.5 py-0.5 rounded-[4px] whitespace-nowrap">
+              {(data.owners as string[])[0]}
+            </span>
+          )}
+          {(data.flows as string[])?.length > 0 && (
+            <span className="bg-surface-elevated text-ink border border-hairline text-[10px] px-1.5 py-0.5 rounded-[4px] whitespace-nowrap">
+              {(data.flows as string[])[0]} Flow
+            </span>
+          )}
+        </div>
       </div>
       <Handle type="source" position={Position.Bottom} className="w-2 h-2 !bg-mute border-none" />
     </div>

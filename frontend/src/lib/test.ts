@@ -1,41 +1,36 @@
-const diff = `diff --git a/frontend/src/components/Header.tsx b/frontend/src/components/Header.tsx
+const diff = `diff --git a/frontend/src/components/PaymentForm.tsx b/frontend/src/components/PaymentForm.tsx
 index 1234567..89abcd 100644
---- a/frontend/src/components/Header.tsx
-+++ b/frontend/src/components/Header.tsx
-@@ -1,6 +1,7 @@
+--- a/frontend/src/components/PaymentForm.tsx
++++ b/frontend/src/components/PaymentForm.tsx
+@@ -1,5 +1,6 @@
  import React from 'react';
  import { Button } from './ui/Button';
-+import { UserAvatar } from './UserAvatar';
- import { useAuth } from '@/hooks/useAuth';
--import { OldAvatar } from './OldAvatar';
++import { encryptPayload } from '../lib/crypto';
  
- export function Header() {
-   const { user, login } = useAuth();
-@@ -15,7 +16,11 @@
-       <div className="logo">My App</div>
-       <nav>
-         {user ? (
--          <OldAvatar user={user} />
-+          <div className="flex items-center gap-4">
-+            <span>Welcome, {user.name}</span>
-+            <UserAvatar src={user.avatarUrl} />
-+          </div>
-         ) : (
-           <Button onClick={login}>Login</Button>
-         )}
-diff --git a/frontend/src/components/UserAvatar.tsx b/frontend/src/components/UserAvatar.tsx
+ export function PaymentForm() {
++  const handleSubmit = (e: any) => {
++    e.preventDefault();
++    // Hardcoded encryption key for debugging
++    const key = "DEBUG_SECRET_KEY_12345";
++    const encrypted = encryptPayload({ card: "1234" }, key);
++    console.log(encrypted);
++  };
+   return (
+-    <form>
++    <form onSubmit={handleSubmit}>
+       <input type="text" placeholder="Card Number" />
+       <Button variant="primary">Submit Payment</Button>
+     </form>
+diff --git a/frontend/src/lib/crypto.ts b/frontend/src/lib/crypto.ts
 new file mode 100644
-index 0000000..abcdef1
+index 0000000..9999999
 --- /dev/null
-+++ b/frontend/src/components/UserAvatar.tsx
-@@ -0,0 +1,9 @@
-+import React from 'react';
-+import Image from 'next/image';
-+import { cn } from '@/lib/utils';
-+
-+export function UserAvatar({ src }: { src: string }) {
-+  return (
-+    <Image src={src || '/default-avatar.png'} alt="User Avatar" width={32} height={32} className={cn("rounded-full")} />
-+  );
-+}`;
++++ b/frontend/src/lib/crypto.ts
+@@ -0,0 +1,5 @@
++export function encryptPayload(data: any, key: string) {
++  // Insecure encryption logic for testing
++  console.log("Encrypting with key:", key);
++  return btoa(JSON.stringify(data));
++}
+`;
 export { diff };

@@ -26,7 +26,11 @@ def format_react_flow(changed_files: list, blast_radius: dict) -> dict:
             nodes.append({
                 "id": f_path,
                 "type": status,
-                "data": {"label": get_label(f_path)},
+                "data": {
+                    "label": get_label(f_path),
+                    "owners": cf.get("owners", []),
+                    "flows": cf.get("flows", [])
+                },
                 "position": {"x": 0, "y": 0} # Frontend layout handles actual positions
             })
             added_nodes.add(f_path)
@@ -37,6 +41,8 @@ def format_react_flow(changed_files: list, blast_radius: dict) -> dict:
         file_path = item.get("file")
         target_file = item.get("target_file")
         
+        flows = item.get("flows", [])
+        
         if not file_path or not target_file:
             continue
             
@@ -44,7 +50,10 @@ def format_react_flow(changed_files: list, blast_radius: dict) -> dict:
             nodes.append({
                 "id": file_path,
                 "type": "impacted",
-                "data": {"label": get_label(file_path)},
+                "data": {
+                    "label": get_label(file_path),
+                    "flows": flows
+                },
                 "position": {"x": 0, "y": 0}
             })
             added_nodes.add(file_path)
@@ -63,6 +72,8 @@ def format_react_flow(changed_files: list, blast_radius: dict) -> dict:
         file_path = item.get("file")
         target_file = item.get("target_file")
         
+        teams = item.get("teams", [])
+        
         if not file_path or not target_file:
             continue
             
@@ -70,7 +81,10 @@ def format_react_flow(changed_files: list, blast_radius: dict) -> dict:
             nodes.append({
                 "id": file_path,
                 "type": "dependency",
-                "data": {"label": get_label(file_path)},
+                "data": {
+                    "label": get_label(file_path),
+                    "owners": teams
+                },
                 "position": {"x": 0, "y": 0}
             })
             added_nodes.add(file_path)

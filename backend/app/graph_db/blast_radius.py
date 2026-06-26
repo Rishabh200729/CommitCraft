@@ -13,7 +13,8 @@ class BlastRadiusEngine:
         query = """
         MATCH (target:File {path: $file_path})
         MATCH path = (dependent:File)-[:IMPORTS*1..%s]->(target)
-        RETURN dependent.path AS impacted_file, length(path) AS depth
+        OPTIONAL MATCH (flow:UserFlow)-[:ENTRY_POINT]->(dependent)
+        RETURN dependent.path AS impacted_file, length(path) AS depth, collect(flow.name) AS flows
         ORDER BY depth ASC
         """ % max_depth
 
@@ -23,7 +24,8 @@ class BlastRadiusEngine:
             for record in result:
                 impacted.append({
                     "file": record["impacted_file"],
-                    "depth": record["depth"]
+                    "depth": record["depth"],
+                    "flows": record["flows"]
                 })
         return impacted
 
@@ -35,7 +37,8 @@ class BlastRadiusEngine:
         query = """
         MATCH (target:File {path: $file_path})
         MATCH path = (target)-[:IMPORTS*1..%s]->(upstream:File)
-        RETURN upstream.path AS dependency_file, length(path) AS depth
+        OPTIONAL MATCH (team:Team)-[:OWNS]->(upstream)
+        RETURN upstream.path AS dependency_file, length(path) AS depth, collect(team.name) AS teams
         ORDER BY depth ASC
         """ % max_depth
 
@@ -45,6 +48,34 @@ class BlastRadiusEngine:
             for record in result:
                 dependencies.append({
                     "file": record["dependency_file"],
-                    "depth": record["depth"]
+                    "depth": record["depth"],
+                    "teams": record["teams"]
                 })
         return dependencies
+
+    def get_file_owners(self, file_path: str) -> list:
+        query = """
+        MATCH (f:File {path: $file_path})
+        OPTIONAL MATCH (team:Team)-[:OWNS]->(f)
+        RETURN collect(team.name) AS teams
+        """
+        with self.client.driver.session() as session:
+            result = session.run(query, file_path=file_path)
+            record = result.single()
+            if record:
+                return record["teams"]
+        return []
+
+    def get_file_flows(self, file_path: str) -> list:
+        query = """
+        MATCH (f:File {path: $file_path})
+        OPTIONAL MATCH (flow:UserFlow)-[:ENTRY_POINT]->(f)
+        RETURN collect(flow.name) AS flows
+        """
+        with self.client.driver.session() as session:
+            result = session.run(query, file_path=file_path)
+            record = result.single()
+            if record:
+                return record["flows"]
+        return []
+

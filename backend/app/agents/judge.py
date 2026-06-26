@@ -1,6 +1,6 @@
 import json
 import os
-from langchain_openai import ChatOpenAI
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import PromptTemplate
 from .state import PRReviewState, FinalVerdict
 
@@ -9,12 +9,10 @@ def judge_node(state: PRReviewState) -> dict:
     Acts as the adversarial filter for the pipeline.
     Validates the Senior Engineer's claims against the deterministic Neo4j graph, stripping out any hallucinations.
     """
-    llm = ChatOpenAI(
-        base_url="https://openrouter.ai/api/v1",
-        api_key=os.environ.get("OPENROUTER_API_KEY"),
-        model="google/gemma-4-31b-it:free",
-        temperature=0,
-        extra_body={"reasoning": {"enabled": True}}
+    llm = ChatGoogleGenerativeAI(
+        model="gemini-2.5-flash",
+        google_api_key=os.environ.get("GEMINI_API_KEY"),
+        temperature=0
     )
     structured_llm = llm.with_structured_output(FinalVerdict)
     
@@ -25,6 +23,7 @@ def judge_node(state: PRReviewState) -> dict:
     CRITICAL INSTRUCTION:
     Your primary job is to REMOVE HALLUCINATIONS. 
     Validate every claim made by the Senior Engineer against the Blast Radius. If the Senior Engineer claims a dependency exists that is NOT in the Blast Radius, remove that claim.
+    Extract the 'impacted_flows' and 'owners' from the Neo4j Blast Radius data if present.
     If information is unavailable, return "unknown". Do not infer or fabricate.
     
     Produce the Final Verdict.

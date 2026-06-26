@@ -63,3 +63,29 @@ class Neo4jClient:
         """
         with self.driver.session() as session:
             session.run(query, source_path=source_path, target_path=target_path)
+
+    def merge_user_flow(self, flow_name: str, entry_point_path: str):
+        """
+        Upserts a UserFlow node and connects it to a File node via ENTRY_POINT.
+        """
+        query = """
+        MERGE (flow:UserFlow {name: $flow_name})
+        MERGE (file:File {path: $entry_point_path})
+        MERGE (flow)-[r:ENTRY_POINT]->(file)
+        RETURN r
+        """
+        with self.driver.session() as session:
+            session.run(query, flow_name=flow_name, entry_point_path=entry_point_path)
+
+    def merge_team_ownership(self, team_name: str, file_path: str):
+        """
+        Upserts a Team node and connects it to a File node via OWNS.
+        """
+        query = """
+        MERGE (team:Team {name: $team_name})
+        MERGE (file:File {path: $file_path})
+        MERGE (team)-[r:OWNS]->(file)
+        RETURN r
+        """
+        with self.driver.session() as session:
+            session.run(query, team_name=team_name, file_path=file_path)

@@ -1,6 +1,7 @@
 import os
 import sys
 from pathlib import Path
+import json
 
 # Add backend to sys.path so we can import modules
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -44,6 +45,32 @@ def ingest_directory(directory: str, project_root: str):
                             edge_count += 1
                             
         print(f"Ingestion complete! Created {edge_count} IMPORTS relationships.")
+
+        # 3. Third pass: Ingest UserFlows and Teams from gitscribe.json
+        config_path = os.path.join(project_root, "gitscribe.json")
+        if os.path.exists(config_path):
+            print("Pass 3: Ingesting gitscribe.json configuration...")
+            try:
+                with open(config_path, "r", encoding="utf-8") as f:
+                    config = json.load(f)
+                
+                # Ingest flows
+                for flow_name, files in config.get("flows", {}).items():
+                    for file_rel_path in files:
+                        entry_point = os.path.abspath(os.path.join(project_root, file_rel_path))
+                        if os.path.exists(entry_point):
+                            client.merge_user_flow(flow_name, entry_point)
+                
+                # Ingest owners
+                for team_name, files in config.get("owners", {}).items():
+                    for file_rel_path in files:
+                        owned_file = os.path.abspath(os.path.join(project_root, file_rel_path))
+                        # In a real app we'd handle glob patterns, here we'll assume direct paths for MVP
+                        if os.path.exists(owned_file):
+                            client.merge_team_ownership(team_name, owned_file)
+                print("Configuration ingestion complete.")
+            except Exception as e:
+                print(f"Error parsing gitscribe.json: {e}")
         
     finally:
         client.close()

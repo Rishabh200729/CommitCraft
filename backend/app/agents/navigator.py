@@ -44,6 +44,10 @@ def navigator_node(state: PRReviewState) -> dict:
             # Resolve to absolute path for Neo4j querying
             abs_f_path = os.path.abspath(os.path.join(project_root, f_path))
             
+            # Fetch target file's own teams and flows
+            file_info["owners"] = engine.get_file_owners(abs_f_path)
+            file_info["flows"] = engine.get_file_flows(abs_f_path)
+            
             downstream = engine.get_downstream_impact(abs_f_path)
             upstream = engine.get_upstream_dependencies(abs_f_path)
             
@@ -51,21 +55,38 @@ def navigator_node(state: PRReviewState) -> dict:
                 rel_file = os.path.relpath(item["file"], project_root).replace('\\', '/')
                 edge_id = f"{rel_file}->{f_path}"
                 if edge_id not in seen_downstream_edges:
-                    combined_downstream.append({"file": rel_file, "target_file": f_path})
+                    combined_downstream.append({
+                        "file": rel_file, 
+                        "target_file": f_path,
+                        "flows": item.get("flows", [])
+                    })
                     seen_downstream_edges.add(edge_id)
                     
             for item in upstream:
                 rel_file = os.path.relpath(item["file"], project_root).replace('\\', '/')
                 edge_id = f"{f_path}->{rel_file}"
                 if edge_id not in seen_upstream_edges:
-                    combined_upstream.append({"file": rel_file, "target_file": f_path})
+                    combined_upstream.append({
+                        "file": rel_file, 
+                        "target_file": f_path,
+                        "teams": item.get("teams", [])
+                    })
                     seen_upstream_edges.add(edge_id)
         
+        # Collect target file owners and flows
+        target_owners = []
+        target_flows = []
+        for file_info in changed_files:
+            target_owners.extend(file_info.get("owners", []))
+            target_flows.extend(file_info.get("flows", []))
+
         return {
             "changed_files": changed_files,
             "blast_radius": {
                 "downstream": combined_downstream,
-                "upstream": combined_upstream
+                "upstream": combined_upstream,
+                "target_owners": list(set(target_owners)),
+                "target_flows": list(set(target_flows))
             }
         }
     except Exception as e:

@@ -32,7 +32,7 @@ export default function DashboardPage() {
       const payload = {
         repository_id: "test-repo",
         pr_number: 99,
-        target_file: "frontend/src/components/Header.tsx",
+        target_file: "frontend/src/components/PaymentForm.tsx",
         diff
       };
       
@@ -169,6 +169,34 @@ export default function DashboardPage() {
                 {verdict.architectural_summary}
               </p>
             </div>
+
+            {/* Impacted User Flows */}
+            {verdict.impacted_flows?.length > 0 && (
+              <div>
+                <span className="text-caption-sm text-mute uppercase block mb-2">Impacted User Flows</span>
+                <div className="flex flex-wrap gap-2">
+                  {verdict.impacted_flows.map((flow: string, idx: number) => (
+                    <span key={idx} className="bg-surface-elevated border border-hairline px-3 py-1 rounded-[6px] text-body-sm font-medium text-ink">
+                      {flow}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Affected Teams */}
+            {verdict.owners?.length > 0 && (
+              <div>
+                <span className="text-caption-sm text-mute uppercase block mb-2">Required Reviewers (Teams)</span>
+                <div className="flex flex-wrap gap-2">
+                  {verdict.owners.map((team: string, idx: number) => (
+                    <span key={idx} className="bg-accent-blue-soft text-accent-blue px-3 py-1 rounded-[6px] text-body-sm font-medium">
+                      {team}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Critical Findings */}
             {verdict.critical_findings?.length > 0 && (

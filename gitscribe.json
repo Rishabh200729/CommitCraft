@@ -1,0 +1,11 @@
+{
+  "flows": {
+    "Checkout": ["frontend/src/app/checkout/page.tsx"],
+    "Login": ["frontend/src/app/login/page.tsx"]
+  },
+  "owners": {
+    "Payment Team": ["frontend/src/components/PaymentForm.tsx"],
+    "Auth Team": ["frontend/src/components/LoginForm.tsx"],
+    "Platform Team": ["frontend/src/components/ui/Button.tsx"]
+  }
+}

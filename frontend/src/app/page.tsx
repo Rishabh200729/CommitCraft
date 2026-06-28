@@ -23,11 +23,11 @@ export default function Home() {
             Review architecture, <br/>not just syntax.
           </h1>
           <p className="text-body-lg text-mute mb-lg max-w-[600px]">
-            GitScribe acts as the intelligence layer between AI code generation and human code review. Understand blast radius and merge risks in seconds.
+            GitScribe is the visual PR review platform. Understand blast radius, logic flaws, and merge risks in seconds.
           </p>
           <div className="flex items-center gap-4">
-            <a href="/dashboard">
-              <Button variant="primary">Launch Dashboard</Button>
+            <a href="/api/auth/github">
+              <Button variant="primary">Login with GitHub</Button>
             </a>
             <Button variant="secondary">View Documentation</Button>
           </div>

@@ -43,3 +43,5 @@ langchain-neo4j==0.10.0
 tree-sitter==0.22.3
 tree-sitter-typescript==0.21.2 
 tree-sitter-python==0.25.0
+# --- NEW: GITHUB & LLM INTEGRATION ---
+langchain-openai==0.1.16

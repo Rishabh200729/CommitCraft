@@ -1,69 +1,25 @@
 import os
-import json
 import uuid
-from fastapi import APIRouter, HTTPException, BackgroundTasks
-from google import genai
-from google.genai import types
+from fastapi import APIRouter, HTTPException, BackgroundTasks, Header
+from pydantic import BaseModel
 
-from app.schemas.api import (
-    PullRequestWebhook, 
-    WebhookAcceptedResponse, 
-    PRStatusResponse, 
-    GenerateRequest, 
-    GenerateResponse
-)
-from app.services.webhook_service import jobs, process_pr_webhook
+from app.services.analysis_service import jobs, run_analysis_pipeline
 
 router = APIRouter()
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-if GEMINI_API_KEY:
-    client = genai.Client(api_key=GEMINI_API_KEY)
-else:
-    client = None
-# this endpoint is used for generating git commit message and pr description for a single file
-@router.post("/generate", response_model=GenerateResponse)
-def generate(request: GenerateRequest):
-    if not client:
-        raise HTTPException(status_code=500, detail="Gemini API key not configured")
+class AnalyzeRequest(BaseModel):
+    owner: str
+    repo: str
+    pr_number: int
 
-    if not request.diff.strip():
-        raise HTTPException(status_code=400, detail="Diff content is required")
+class PRStatusResponse(BaseModel):
+    status: str
+    analysis: dict | None = None
+    error: str | None = None
 
-    system_instruction = """You are an expert developer tool.
-Given a git diff, you must generate a Conventional Commit message and a professional GitHub PR description.
-Return ONLY valid JSON with this schema:
-{
-  "commitMessage": "string (The conventional commit message)",
-  "prDescription": "string (The PR description including Summary, Changes, and Testing sections)"
-}
-Do NOT wrap the response in markdown codeblocks like ```json...```, just output the raw JSON object."""
-
-    try:
-        response = client.models.generate_content(
-            model='gemini-2.5-flash',
-            contents=request.diff,
-            config=types.GenerateContentConfig(
-                system_instruction=system_instruction,
-                response_mime_type="application/json",
-            ),
-        )
-        
-        result_text = response.text
-        if result_text.startswith("```json"):
-            result_text = result_text[7:]
-        if result_text.endswith("```"):
-            result_text = result_text[:-3]
-            
-        data = json.loads(result_text)
-        return GenerateResponse(
-            commitMessage=data.get("commitMessage", ""),
-            prDescription=data.get("prDescription", "")
-        )
-    except json.JSONDecodeError as e:
-        raise HTTPException(status_code=500, detail=f"Failed to parse JSON from AI: {e}\nResponse: {result_text}")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+class AnalyzeResponse(BaseModel):
+    job_id: str
+    status: str
 
 @router.get("/health")
 def health_check():
@@ -74,18 +30,37 @@ def health_check():
         "service": "GitScribe API",
         "neo4j_config": neo4j_status
     }
-# this endpoint is used for processing the pull request webhook
-@router.post("/api/webhooks/pr", response_model=WebhookAcceptedResponse, status_code=202)
-async def handle_pr_webhook(payload: PullRequestWebhook, background_tasks: BackgroundTasks):
+
+@router.post("/api/analyze", response_model=AnalyzeResponse, status_code=202)
+async def start_analysis(
+    request: AnalyzeRequest, 
+    background_tasks: BackgroundTasks,
+    authorization: str | None = Header(None)
+):
+    token = ""
+    if authorization and authorization.startswith("Bearer "):
+        token = authorization.split(" ")[1]
+        
+    if not token:
+        # We allow it without a token for public repos, though GitHub API rate limits might apply
+        pass
+
     job_id = str(uuid.uuid4())
     
     # Initialize job state
     jobs[job_id] = {"status": "processing"}
     
     # Launch background processing
-    background_tasks.add_task(process_pr_webhook, job_id, payload.target_file, payload.diff)
+    background_tasks.add_task(
+        run_analysis_pipeline, 
+        job_id, 
+        request.owner, 
+        request.repo, 
+        request.pr_number, 
+        token
+    )
     
-    return WebhookAcceptedResponse(job_id=job_id, status="processing")
+    return AnalyzeResponse(job_id=job_id, status="processing")
 
 @router.get("/api/pr/{job_id}", response_model=PRStatusResponse)
 async def get_pr_status(job_id: str):
@@ -99,3 +74,4 @@ async def get_pr_status(job_id: str):
         analysis=job_data.get("analysis"),
         error=job_data.get("error")
     )
+

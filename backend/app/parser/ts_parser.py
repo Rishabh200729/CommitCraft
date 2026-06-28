@@ -95,3 +95,41 @@ class TypeScriptParser:
                     return str(resolved_path)
 
         return None
+
+    def parse_directory(self, root_dir: str, repo_id: str) -> List[dict]:
+        """
+        Walks a directory, extracts imports, resolves paths relative to repo root, 
+        and returns structured data ready for Neo4j ingestion.
+        """
+        results = []
+        root_path = Path(root_dir).resolve()
+        
+        for dirpath, dirnames, filenames in os.walk(root_dir):
+            # Skip common ignored directories
+            dirnames[:] = [d for d in dirnames if d not in ('node_modules', '.git', 'dist', 'build', '.next')]
+            
+            for filename in filenames:
+                if filename.endswith(('.ts', '.tsx')):
+                    file_path = os.path.join(dirpath, filename)
+                    
+                    # We want the path relative to the repo root for Neo4j
+                    rel_file_path = os.path.relpath(file_path, root_dir).replace('\\', '/')
+                    
+                    raw_imports = self.extract_imports(file_path)
+                    resolved_imports = []
+                    
+                    for raw in raw_imports:
+                        resolved = self.resolve_import_path(file_path, raw, root_dir)
+                        if resolved:
+                            # Convert resolved absolute path back to relative
+                            rel_resolved = os.path.relpath(resolved, root_dir).replace('\\', '/')
+                            resolved_imports.append(rel_resolved)
+                    
+                    results.append({
+                        "repo_id": repo_id,
+                        "file_path": rel_file_path,
+                        "extension": os.path.splitext(filename)[1],
+                        "imports": list(set(resolved_imports))
+                    })
+                    
+        return results

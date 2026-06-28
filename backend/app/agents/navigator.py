@@ -13,21 +13,18 @@ def navigator_node(state: PRReviewState) -> dict:
     """
     Deterministically queries Neo4j for the target file's blast radius.
     """
-    target_file = state.get("target_file", "")
+    repo_id = state.get("repo_id", "")
     pr_diff = state.get("pr_diff", "")
     changed_files = state.get("changed_files", [])
     
     if not changed_files and pr_diff:
         changed_files = DiffParser.parse_diff(pr_diff)
         
-    if not changed_files and target_file:
-        changed_files = [{"file": target_file, "status": "modified"}]
-        
     if not changed_files:
-        return {"blast_radius": {"error": "No files changed or target file provided"}}
+        return {"blast_radius": {"error": "No files changed"}}
     
-    current_file_path = os.path.abspath(__file__)
-    project_root = os.path.abspath(os.path.join(os.path.dirname(current_file_path), "..", "..", ".."))
+    if not repo_id:
+        return {"blast_radius": {"error": "repo_id is required"}}
     
     client = Neo4jClient()
     engine = BlastRadiusEngine(client)
@@ -39,20 +36,19 @@ def navigator_node(state: PRReviewState) -> dict:
     
     try:
         for file_info in changed_files:
-            f_path = file_info["file"]
+            # f_path is relative to the repo root
+            f_path = file_info["file"].replace('\\', '/')
+            file_info["file"] = f_path
             
-            # Resolve to absolute path for Neo4j querying
-            abs_f_path = os.path.abspath(os.path.join(project_root, f_path))
+            # Fetch target file's own teams and flows using repo_id
+            file_info["owners"] = engine.get_file_owners(f_path, repo_id)
+            file_info["flows"] = engine.get_file_flows(f_path, repo_id)
             
-            # Fetch target file's own teams and flows
-            file_info["owners"] = engine.get_file_owners(abs_f_path)
-            file_info["flows"] = engine.get_file_flows(abs_f_path)
-            
-            downstream = engine.get_downstream_impact(abs_f_path)
-            upstream = engine.get_upstream_dependencies(abs_f_path)
+            downstream = engine.get_downstream_impact(f_path, repo_id)
+            upstream = engine.get_upstream_dependencies(f_path, repo_id)
             
             for item in downstream:
-                rel_file = os.path.relpath(item["file"], project_root).replace('\\', '/')
+                rel_file = item["file"].replace('\\', '/')
                 edge_id = f"{rel_file}->{f_path}"
                 if edge_id not in seen_downstream_edges:
                     combined_downstream.append({
@@ -63,7 +59,7 @@ def navigator_node(state: PRReviewState) -> dict:
                     seen_downstream_edges.add(edge_id)
                     
             for item in upstream:
-                rel_file = os.path.relpath(item["file"], project_root).replace('\\', '/')
+                rel_file = item["file"].replace('\\', '/')
                 edge_id = f"{f_path}->{rel_file}"
                 if edge_id not in seen_upstream_edges:
                     combined_upstream.append({
@@ -93,3 +89,4 @@ def navigator_node(state: PRReviewState) -> dict:
         return {"blast_radius": {"error": str(e)}}
     finally:
         client.close()
+

@@ -1,235 +1,184 @@
 'use client';
 
-import React, { useState } from 'react';
-import axios from 'axios';
-import { Button } from '@/components/ui/Button';
-import { ReactFlowProvider, ReactFlow, Background, Controls, Node, Edge } from '@xyflow/react';
-import '@xyflow/react/dist/style.css';
-import { FileNode } from '@/components/ui/FileNode';
-import { getLayoutedElements } from '@/lib/layout';
-import { Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
-import { diff } from '@/lib/test';
-import { usePRPolling } from '@/hooks/usePRPolling';
-const nodeTypes = {
-  modified: FileNode,
-  added: FileNode,
-  removed: FileNode,
-  impacted: FileNode,
-  dependency: FileNode,
-};
+import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { Loader2, GitPullRequest, Search, AlertCircle } from 'lucide-react';
 
 export default function DashboardPage() {
-  const [jobId, setJobId] = useState<string | null>(null);
-  const [triggerError, setTriggerError] = useState<string | null>(null);
+  const router = useRouter();
+  const [session, setSession] = useState<{authenticated: boolean, user?: any} | null>(null);
+  const [repos, setRepos] = useState<any[]>([]);
+  const [selectedRepo, setSelectedRepo] = useState<any | null>(null);
+  const [prs, setPrs] = useState<any[]>([]);
+  const [loadingRepos, setLoadingRepos] = useState(true);
+  const [loadingPrs, setLoadingPrs] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+  // Check session
+  useEffect(() => {
+    fetch('/api/auth/session')
+      .then(res => res.json())
+      .then(data => {
+        if (!data.authenticated) {
+          router.push('/');
+        } else {
+          setSession(data);
+          fetchRepos();
+        }
+      })
+      .catch(() => router.push('/'));
+  }, [router]);
 
-  const { jobStatus, isProcessing, verdict, isCompleted, error: pollingError } = usePRPolling(jobId);
-
-  const triggerAnalysis = async () => {
-    setTriggerError(null);
+  const fetchRepos = async () => {
+    setLoadingRepos(true);
     try {
-      const payload = {
-        repository_id: "test-repo",
-        pr_number: 99,
-        target_file: "frontend/src/components/PaymentForm.tsx",
-        diff
-      };
-      
-      const res = await axios.post(`${API_URL}/api/webhooks/pr`, payload);
-      setJobId(res.data.job_id);
+      const res = await fetch('/api/github/repos');
+      const data = await res.json();
+      if (res.ok) {
+        setRepos(data.repos || []);
+      } else {
+        setError(data.error || 'Failed to fetch repos');
+      }
     } catch (err) {
-      console.error("Failed to trigger webhook", err);
-      setTriggerError("Failed to trigger API. Check console.");
+      setError('Network error');
+    } finally {
+      setLoadingRepos(false);
     }
   };
 
-  // Compute Layout if graph data is ready
-  let nodes: Node[] = [];
-  let edges: Edge[] = [];
-  
-  if (isCompleted && jobStatus?.analysis?.graph) {
-    const rawNodes = jobStatus.analysis.graph.nodes || [];
-    const rawEdges = jobStatus.analysis.graph.edges || [];
-    const layouted = getLayoutedElements(rawNodes, rawEdges, 'TB');
-    nodes = layouted.nodes;
-    edges = layouted.edges;
+  const fetchPrs = async (repo: any) => {
+    setSelectedRepo(repo);
+    setLoadingPrs(true);
+    setPrs([]);
+    try {
+      const res = await fetch(`/api/github/${repo.owner}/${repo.name}/pulls`);
+      const data = await res.json();
+      if (res.ok) {
+        setPrs(data.pulls || []);
+      } else {
+        setError(data.error || 'Failed to fetch PRs');
+      }
+    } catch (err) {
+      setError('Network error');
+    } finally {
+      setLoadingPrs(false);
+    }
+  };
+
+  const handlePrClick = (pr: any) => {
+    router.push(`/dashboard/${selectedRepo.owner}/${selectedRepo.name}/${pr.number}`);
+  };
+
+  if (!session) {
+    return <div className="flex items-center justify-center h-screen bg-canvas"><Loader2 className="w-8 h-8 animate-spin text-ink" /></div>;
   }
 
+  const filteredRepos = repos.filter(r => r.full_name.toLowerCase().includes(searchQuery.toLowerCase()));
+
   return (
-    <div className="flex w-full h-[calc(100vh-64px)] overflow-hidden bg-canvas">
-      {/* Sidebar: Trigger */}
-      <div className="w-[300px] shrink-0 border-r border-hairline bg-surface p-6 flex flex-col gap-6">
-        <div>
-          <h2 className="text-heading-lg text-ink mb-2">PR Intelligence</h2>
-          <p className="text-body-sm text-mute">
-            Trigger a graph-verified architectural code review.
-          </p>
+    <div className="flex h-screen bg-canvas overflow-hidden">
+      {/* Sidebar: Repos */}
+      <div className="w-[350px] border-r border-hairline-soft bg-surface-base flex flex-col h-full">
+        <div className="p-4 border-b border-hairline-soft flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            {session.user?.avatar_url && (
+              <img src={session.user.avatar_url} alt="Avatar" className="w-8 h-8 rounded-full border border-hairline-soft" />
+            )}
+            <span className="text-body-md text-ink font-medium">{session.user?.login}</span>
+          </div>
+          <Button variant="ghost" size="sm" onClick={() => window.location.href = '/api/auth/logout'}>Logout</Button>
         </div>
         
-        <Button 
-          variant="primary" 
-          className="w-full" 
-          onClick={triggerAnalysis}
-          disabled={isProcessing}
-        >
-          {isProcessing ? (
-            <span className="flex items-center justify-center gap-2 w-full"><Loader2 className="w-4 h-4 animate-spin" /> Analyzing...</span>
-          ) : "Trigger PR Analysis"}
-        </Button>
-        
-        {(jobStatus?.status === 'failed' || triggerError || pollingError) && (
-          <div className="p-4 rounded-[8px] border border-hairline bg-accent-red-soft flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-accent-red shrink-0" />
-            <span className="text-body-sm text-accent-red">{triggerError || pollingError || jobStatus?.error || "Job failed"}</span>
+        <div className="p-4 border-b border-hairline-soft">
+          <div className="relative">
+            <Search className="absolute left-3 top-2.5 w-4 h-4 text-mute" />
+            <input 
+              type="text" 
+              placeholder="Search repositories..." 
+              className="w-full bg-surface-card border border-hairline-soft rounded-md py-2 pl-9 pr-3 text-body-sm text-ink outline-none focus:border-accent-blue"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
-        )}
-      </div>
+        </div>
 
-      {/* Main Graph Canvas */}
-      <div className="flex-grow relative border-r border-hairline bg-canvas">
-        <ReactFlowProvider>
-          {nodes.length > 0 ? (
-            <ReactFlow
-              nodes={nodes}
-              edges={edges}
-              nodeTypes={nodeTypes}
-              fitView
-              minZoom={0.5}
-            >
-              <Background color="#ccc" gap={16} />
-              <Controls />
-            </ReactFlow>
+        <div className="flex-1 overflow-y-auto p-2">
+          {loadingRepos ? (
+            <div className="flex justify-center p-4"><Loader2 className="w-6 h-6 animate-spin text-mute" /></div>
+          ) : filteredRepos.length > 0 ? (
+            <div className="flex flex-col gap-1">
+              {filteredRepos.map(repo => (
+                <button
+                  key={repo.id}
+                  onClick={() => fetchPrs(repo)}
+                  className={`text-left px-3 py-2 rounded-md text-body-sm truncate transition-colors ${selectedRepo?.id === repo.id ? 'bg-surface-raised text-ink border border-hairline-soft shadow-sm' : 'text-mute hover:bg-surface-card hover:text-ink'}`}
+                >
+                  {repo.full_name}
+                </button>
+              ))}
+            </div>
           ) : (
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-mute gap-4">
-               {isProcessing ? (
-                  <>
-                    <Loader2 className="w-10 h-10 animate-spin text-accent-blue" />
-                    <span className="text-heading-md">AI Agents are reviewing the code...</span>
-                  </>
-               ) : (
-                  <>
-                    <div className="w-16 h-16 rounded-full bg-surface-card border border-hairline flex items-center justify-center">
-                        <CheckCircle2 className="w-6 h-6 opacity-20" />
-                    </div>
-                    <span className="text-body-lg">Click trigger to run analysis.</span>
-                  </>
-               )}
-            </div>
+            <div className="text-center p-4 text-body-sm text-mute">No repositories found.</div>
           )}
-        </ReactFlowProvider>
+        </div>
       </div>
 
-      {/* AI Verdict Panel */}
-      <div className="w-[450px] shrink-0 bg-surface p-6 overflow-y-auto">
-        <h3 className="text-heading-lg text-ink mb-6">AI Verdict</h3>
-        
-        {isProcessing ? (
-          <div className="flex flex-col gap-6 animate-pulse">
-            <div>
-              <div className="h-4 w-24 bg-surface-card border border-hairline-soft rounded mb-2"></div>
-              <div className="h-8 w-20 bg-surface-card border border-hairline-soft rounded"></div>
-            </div>
-            <div>
-              <div className="h-4 w-40 bg-surface-card border border-hairline-soft rounded mb-2"></div>
-              <div className="h-24 w-full bg-surface-card border border-hairline-soft rounded"></div>
-            </div>
-            <div>
-              <div className="h-4 w-32 bg-surface-card border border-hairline-soft rounded mb-2"></div>
-              <div className="flex flex-col gap-3">
-                <div className="h-12 w-full bg-surface-card border border-hairline-soft rounded"></div>
-                <div className="h-12 w-full bg-surface-card border border-hairline-soft rounded"></div>
-              </div>
-            </div>
-          </div>
-        ) : !verdict ? (
-          <div className="text-body-sm text-mute italic border border-hairline rounded p-4 text-center bg-surface-card">
-            Waiting for LangGraph response...
+      {/* Main Content: PRs */}
+      <div className="flex-1 flex flex-col h-full bg-canvas">
+        {!selectedRepo ? (
+          <div className="flex-1 flex items-center justify-center text-body-lg text-mute">
+            Select a repository to view Pull Requests
           </div>
         ) : (
-          <div className="flex flex-col gap-6">
-            {/* Risk Level Badge */}
-            <div>
-              <span className="text-caption-sm text-mute uppercase block mb-2">Risk Level</span>
-              <div className={`px-3 py-1 rounded-[6px] text-caption-md font-bold w-fit ${
-                verdict.risk_level === 'High' || verdict.risk_level === 'Critical' 
-                  ? 'bg-accent-red-soft text-accent-red'
-                  : verdict.risk_level === 'Medium'
-                  ? 'bg-accent-yellow-soft text-accent-yellow'
-                  : 'bg-accent-green-soft text-accent-green'
-              }`}>
-                {verdict.risk_level}
-              </div>
+          <>
+            <div className="p-6 border-b border-hairline-soft bg-surface-base">
+              <h2 className="text-heading-lg text-ink">{selectedRepo.full_name}</h2>
+              <p className="text-body-sm text-mute mt-1">Open Pull Requests</p>
             </div>
-
-            {/* Architectural Summary */}
-            <div>
-              <span className="text-caption-sm text-mute uppercase block mb-2">Architectural Summary</span>
-              <p className="text-body-md text-ink leading-relaxed">
-                {verdict.architectural_summary}
-              </p>
-            </div>
-
-            {/* Impacted User Flows */}
-            {verdict.impacted_flows?.length > 0 && (
-              <div>
-                <span className="text-caption-sm text-mute uppercase block mb-2">Impacted User Flows</span>
-                <div className="flex flex-wrap gap-2">
-                  {verdict.impacted_flows.map((flow: string, idx: number) => (
-                    <span key={idx} className="bg-surface-elevated border border-hairline px-3 py-1 rounded-[6px] text-body-sm font-medium text-ink">
-                      {flow}
-                    </span>
+            
+            <div className="flex-1 overflow-y-auto p-6">
+              {loadingPrs ? (
+                <div className="flex justify-center p-8"><Loader2 className="w-8 h-8 animate-spin text-mute" /></div>
+              ) : prs.length > 0 ? (
+                <div className="flex flex-col gap-4 max-w-4xl">
+                  {prs.map(pr => (
+                    <Card key={pr.number} variant="feature" className="p-4 cursor-pointer hover:border-accent-blue transition-colors flex items-start gap-4" onClick={() => handlePrClick(pr)}>
+                      <GitPullRequest className="w-5 h-5 text-accent-green mt-1 shrink-0" />
+                      <div className="flex flex-col flex-1">
+                        <div className="flex justify-between items-start">
+                          <h3 className="text-heading-md text-ink font-medium leading-tight mb-1">{pr.title}</h3>
+                          <span className="text-caption-md text-mute shrink-0">#{pr.number}</span>
+                        </div>
+                        <div className="flex gap-4 text-caption-md text-mute mt-2">
+                          <span>By {pr.author}</span>
+                          <span>Updated {new Date(pr.updated_at).toLocaleDateString()}</span>
+                        </div>
+                      </div>
+                    </Card>
                   ))}
                 </div>
-              </div>
-            )}
-
-            {/* Affected Teams */}
-            {verdict.owners?.length > 0 && (
-              <div>
-                <span className="text-caption-sm text-mute uppercase block mb-2">Required Reviewers (Teams)</span>
-                <div className="flex flex-wrap gap-2">
-                  {verdict.owners.map((team: string, idx: number) => (
-                    <span key={idx} className="bg-accent-blue-soft text-accent-blue px-3 py-1 rounded-[6px] text-body-sm font-medium">
-                      {team}
-                    </span>
-                  ))}
+              ) : (
+                <div className="flex flex-col items-center justify-center h-64 text-center">
+                  <GitPullRequest className="w-12 h-12 text-mute opacity-50 mb-4" />
+                  <p className="text-body-lg text-ink font-medium">No open pull requests</p>
+                  <p className="text-body-sm text-mute mt-1">This repository doesn't have any open PRs.</p>
                 </div>
-              </div>
-            )}
-
-            {/* Critical Findings */}
-            {verdict.critical_findings?.length > 0 && (
-              <div>
-                <span className="text-caption-sm text-mute uppercase block mb-2">Critical Findings</span>
-                <ul className="flex flex-col gap-3">
-                  {verdict.critical_findings.map((finding: string, idx: number) => (
-                    <li key={idx} className="p-3 rounded bg-surface-card border border-hairline-soft text-body-sm text-ink flex items-start gap-2">
-                       <AlertCircle className="w-4 h-4 text-accent-red shrink-0 mt-0.5" />
-                       {finding}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* Recommendations */}
-            {verdict.recommendations?.length > 0 && (
-              <div>
-                <span className="text-caption-sm text-mute uppercase block mb-2">Recommendations</span>
-                <ul className="flex flex-col gap-3">
-                  {verdict.recommendations.map((rec: string, idx: number) => (
-                    <li key={idx} className="p-3 rounded bg-surface-card border border-hairline-soft text-body-sm text-ink flex items-start gap-2">
-                       <CheckCircle2 className="w-4 h-4 text-accent-green shrink-0 mt-0.5" />
-                       {rec}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          </>
         )}
       </div>
+
+      {error && (
+        <div className="absolute bottom-4 right-4 bg-surface-raised border border-status-error text-status-error px-4 py-3 rounded-md shadow-lg flex items-center gap-2 text-body-sm">
+          <AlertCircle className="w-4 h-4" />
+          {error}
+          <button onClick={() => setError(null)} className="ml-4 opacity-70 hover:opacity-100">×</button>
+        </div>
+      )}
     </div>
   );
 }

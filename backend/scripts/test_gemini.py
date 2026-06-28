@@ -22,7 +22,7 @@ async def main():
         structured_llm = llm.with_structured_output(TestOutput)
         res = await structured_llm.ainvoke("Write a short summary about GitScribe.")
         print("Success:", res)
-    except Exception as e:
+    except Exception as e:  
         print("Error:", e)
 
 if __name__ == "__main__":

@@ -16,7 +16,10 @@ export function FileNode({ data, type }: NodeProps) {
   const styleClass = styles[type as keyof typeof styles] || styles.dependency;
 
   return (
-    <div className={clsx("px-4 py-3 rounded-lg border flex items-center gap-3 w-[250px]", styleClass)}>
+    <div 
+      className={clsx("px-4 py-3 rounded-lg border flex items-center gap-3 w-[250px] cursor-pointer", styleClass)}
+      onClick={data.onClick as any}
+    >
       <Handle type="target" position={Position.Top} className="w-2 h-2 !bg-mute border-none" />
       <div className="shrink-0 p-2 rounded-md bg-surface border border-hairline-soft">
         <FileCode2 className="w-4 h-4 text-mute" />

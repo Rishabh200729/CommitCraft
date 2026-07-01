@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
     const accessToken = tokenData.access_token;
     
     // Set HTTP-only cookie
-    cookies().set({
+    (await cookies()).set({
       name: 'github_token',
       value: accessToken,
       httpOnly: true,

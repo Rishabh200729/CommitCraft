@@ -4,7 +4,7 @@ import { cookies } from 'next/headers';
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
 
 export async function POST(req: NextRequest) {
-  const token = cookies().get('github_token')?.value;
+  const token = (await cookies()).get('github_token')?.value;
   
   if (!token) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

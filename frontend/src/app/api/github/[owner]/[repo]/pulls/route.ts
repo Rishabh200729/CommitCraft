@@ -3,15 +3,15 @@ import { cookies } from 'next/headers';
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { owner: string; repo: string } }
+  { params }: { params: Promise<{ owner: string; repo: string }> }
 ) {
-  const token = cookies().get('github_token')?.value;
+  const token = (await cookies()).get('github_token')?.value;
   
   if (!token) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   
-  const { owner, repo } = params;
+  const { owner, repo } = await params;
   
   try {
     // Fetch repo's open PRs

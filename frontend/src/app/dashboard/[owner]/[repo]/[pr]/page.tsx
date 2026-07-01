@@ -25,9 +25,9 @@ const nodeTypes = {
   dependency: FileNode,
 };
 
-export default function PrAnalysisPage({ params }: { params: { owner: string, repo: string, pr: string } }) {
+export default function PrAnalysisPage({ params }: { params: Promise<{ owner: string, repo: string, pr: string }> }) {
   const router = useRouter();
-  const { owner, repo, pr } = params;
+  const { owner, repo, pr } = React.use(params);
   
   const [jobId, setJobId] = useState<string | null>(null);
   const [status, setStatus] = useState<string>('idle'); // idle, processing, completed, failed
